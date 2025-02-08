@@ -2,10 +2,9 @@ name: Convert PowerPoint to PDF
 
 on:
   push:
-    # powerpoint ディレクトリ内のファイルが変更された場合に実行
     paths:
       - 'powerpoint/**'
-  workflow_dispatch:  # 手動実行も可能
+  workflow_dispatch:
 
 jobs:
   convert:
@@ -15,24 +14,19 @@ jobs:
       - name: リポジトリのチェックアウト
         uses: actions/checkout@v3
         with:
-          # デフォルトの GITHUB_TOKEN を使用
           persist-credentials: true
 
-      - name: LibreOffice のインストール
+      - name: LibreOffice と日本語フォントのインストール
         run: |
           sudo apt-get update
-          sudo apt-get install -y libreoffice
+          sudo apt-get install -y libreoffice fonts-noto-cjk fonts-ipafont-gothic fonts-ipafont-mincho
+          sudo fc-cache -f -v
 
       - name: PowerPoint を PDF に変換
         run: |
-          # 変換後の PDF を出力するディレクトリを作成
           mkdir -p pdf
-
-          # powerpoint ディレクトリ内のファイルを確認
           echo "== powerpoint ディレクトリの内容 =="
           ls -la powerpoint
-
-          # .pptx ファイルの変換
           for file in powerpoint/*.pptx; do
             if [ -e "$file" ]; then
               echo "Converting $file"
@@ -41,8 +35,6 @@ jobs:
               echo "No .pptx files found in powerpoint"
             fi
           done
-
-          # .ppt ファイルの変換（存在する場合）
           for file in powerpoint/*.ppt; do
             if [ -e "$file" ]; then
               echo "Converting $file"
@@ -51,8 +43,6 @@ jobs:
               echo "No .ppt files found in powerpoint"
             fi
           done
-
-          # 変換結果の確認
           echo "== pdf ディレクトリの内容 =="
           ls -la pdf
 
@@ -60,15 +50,11 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-
-          # pdf ディレクトリ内に PDF ファイルが存在する場合のみ git add を実行
           if compgen -G "pdf/*.pdf" > /dev/null; then
               git add pdf/*.pdf
           else
               echo "pdf ディレクトリに PDF ファイルが存在しません"
           fi
-
-          # 変更があればコミット（コミットメッセージに [skip ci] を含め、再実行を防止）
           if [ -n "$(git status --porcelain)" ]; then
               git commit -m "Update converted PDFs [skip ci]"
               git push
