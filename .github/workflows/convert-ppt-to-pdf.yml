@@ -15,8 +15,7 @@ jobs:
       - name: リポジトリのチェックアウト
         uses: actions/checkout@v3
         with:
-          # PAT を利用する場合、GITHUB_TOKEN の代わりに PAT を使います
-          token: ${{ secrets.PAT }}
+          # デフォルトの GITHUB_TOKEN を使用
           persist-credentials: true
 
       - name: LibreOffice のインストール
