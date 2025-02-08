@@ -22,14 +22,20 @@ jobs:
 
       - name: PowerPoint を PDF に変換
         run: |
-          # 出力先ディレクトリを作成（存在しない場合）
+          # 変換後の PDF を出力するディレクトリを作成
           mkdir -p pdf
+
+          # powepoint ディレクトリ内のファイルを確認
+          echo "== powepoint ディレクトリの内容 =="
+          ls -la powepoint
 
           # .pptx ファイルの変換
           for file in powepoint/*.pptx; do
             if [ -e "$file" ]; then
               echo "Converting $file"
               libreoffice --headless --convert-to pdf "$file" --outdir pdf
+            else
+              echo "No .pptx files found"
             fi
           done
 
@@ -38,15 +44,21 @@ jobs:
             if [ -e "$file" ]; then
               echo "Converting $file"
               libreoffice --headless --convert-to pdf "$file" --outdir pdf
+            else
+              echo "No .ppt files found"
             fi
           done
+
+          # 変換結果の確認
+          echo "== pdf ディレクトリの内容 =="
+          ls -la pdf
 
       - name: 生成された PDF をコミットしてプッシュ
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          # PDF ファイルが存在する場合のみ git add を実行
+          # pdf ディレクトリ内に PDF ファイルが存在する場合のみ git add を実行
           if compgen -G "pdf/*.pdf" > /dev/null; then
               git add pdf/*.pdf
           else
