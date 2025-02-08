@@ -1,0 +1,55 @@
+name: Convert PowerPoint to PDF
+
+on:
+  push:
+    # powepoint ディレクトリ内のファイルが変更された場合に実行
+    paths:
+      - 'powepoint/**'
+  workflow_dispatch:  # 手動実行も可能
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v3
+
+      - name: LibreOffice のインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice
+
+      - name: PPTX / PPT を PDF に変換
+        run: |
+          # 出力先ディレクトリを作成（存在しない場合）
+          mkdir -p pdf
+
+          # .pptx ファイルの変換
+          for file in powepoint/*.pptx; do
+            if [ -e "$file" ]; then
+              echo "Converting $file"
+              libreoffice --headless --convert-to pdf "$file" --outdir pdf
+            fi
+          done
+
+          # .ppt ファイルの変換（存在する場合）
+          for file in powepoint/*.ppt; do
+            if [ -e "$file" ]; then
+              echo "Converting $file"
+              libreoffice --headless --convert-to pdf "$file" --outdir pdf
+            fi
+          done
+
+      - name: 生成された PDF をコミットしてプッシュ
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add pdf/*.pdf
+          # 変更があればコミット（コミットメッセージに [skip ci] を含め、再実行を防止）
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "Update converted PDFs [skip ci]"
+            git push
+          else
+            echo "No changes to commit"
+          fi

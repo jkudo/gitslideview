@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>PDF.js を使ったスライド表示</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      font-family: sans-serif;
+      background-color: #f7f7f7;
+    }
+    #pdf-canvas {
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+    .controls {
+      margin-top: 10px;
+    }
+    button {
+      padding: 5px 10px;
+      margin: 0 5px;
+      font-size: 16px;
+    }
+    #page-info {
+      font-size: 16px;
+      vertical-align: middle;
+    }
+    .download-link {
+      margin-top: 10px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>PDF.js を使ったスライド表示</h1>
+  <!-- オリジナルの PowerPoint ファイルへのリンク -->
+  <p class="download-link">
+    オリジナルの PowerPoint をダウンロード: 
+    <a href="powepoint/sample.pptx" download>Download PPT</a>
+  </p>
+
+  <!-- PDF 表示用の canvas -->
+  <canvas id="pdf-canvas"></canvas>
+  <div class="controls">
+    <button id="prev">前のページ</button>
+    <span id="page-info"></span>
+    <button id="next">次のページ</button>
+  </div>
+
+  <!-- PDF.js ライブラリの読み込み (CDN 経由) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>
+    // PDF.js の Worker のパスを指定
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+    // PDF ファイルの URL を、pdf ディレクトリ内のファイルに変更
+    const url = 'pdf/sample.pdf';
+
+    // PDF ドキュメントとレンダリング用の変数を初期化
+    let pdfDoc = null,
+        currentPage = 1,
+        totalPages = 0,
+        canvas = document.getElementById('pdf-canvas'),
+        ctx = canvas.getContext('2d');
+
+    /**
+     * 指定したページ番号 num のページを canvas にレンダリングする関数
+     */
+    function renderPage(num) {
+      pdfDoc.getPage(num).then(function(page) {
+        // 表示倍率（必要に応じて調整）
+        const scale = 1.5;
+        const viewport = page.getViewport({ scale: scale });
+        
+        // canvas サイズを viewport に合わせて調整
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        // レンダリングコンテキストを設定
+        const renderContext = {
+          canvasContext: ctx,
+          viewport: viewport
+        };
+
+        // ページをレンダリング
+        page.render(renderContext);
+
+        // ページ番号情報の更新
+        document.getElementById('page-info').textContent = num + ' / ' + totalPages;
+      });
+    }
+
+    // PDF ドキュメントを非同期で読み込み
+    pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
+      pdfDoc = pdfDoc_;
+      totalPages = pdfDoc.numPages;
+      renderPage(currentPage);
+    }).catch(function(error) {
+      console.error('PDF の読み込みエラー: ' + error);
+    });
+
+    // 「前のページ」ボタンのイベント
+    document.getElementById('prev').addEventListener('click', function() {
+      if (currentPage <= 1) return;
+      currentPage--;
+      renderPage(currentPage);
+    });
+
+    // 「次のページ」ボタンのイベント
+    document.getElementById('next').addEventListener('click', function() {
+      if (currentPage >= totalPages) return;
+      currentPage++;
+      renderPage(currentPage);
+    });
+  </script>
+</body>
+</html>
